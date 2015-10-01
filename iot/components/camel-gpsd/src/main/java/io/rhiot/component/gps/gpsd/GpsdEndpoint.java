@@ -38,7 +38,7 @@ public class GpsdEndpoint extends DefaultEndpoint {
     @UriParam(defaultValue = "2947")
     private int port = 2947;
     @UriParam(defaultValue = "localhost")
-    private String host = "10.0.0.13";
+    private String host = "10.0.0.13"; //todo add and test params
 
     private GPSdEndpoint gpsd4javaEndpoint;
     
@@ -73,6 +73,14 @@ public class GpsdEndpoint extends DefaultEndpoint {
     protected void doStart() throws Exception {
         super.doStart();
         gpsd4javaEndpoint = new GPSdEndpoint(host, port, new ResultParser());
+    }
+
+    @Override
+    protected void doStop() throws Exception {
+        super.doStop();
+        if (gpsd4javaEndpoint != null) {
+            gpsd4javaEndpoint.stop();
+        }
     }
 
     // Configuration
