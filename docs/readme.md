@@ -36,6 +36,11 @@ Rhiot comes with the following features:
     - [URI format](#uri-format)
     - [Options](#options)
     - [Process manager](#process-manager)
+  - [Camel GPSD component](#camel-gpsd-component)
+    - [Maven dependency](#maven-dependency)
+    - [URI format](#uri-format)
+    - [Options](#options)
+    - [Process manager](#process-manager)
   - [Camel Kura Wifi component](#camel-kura-wifi-component)
     - [Maven dependency](#maven-dependency-1)
     - [URI format](#uri-format-1)
@@ -390,6 +395,47 @@ the manager as the bean:
 
 Custom process manager may be useful if for some reasons your Linux distribution requires executing some unusual commands
 in order to make the GPSD up and running.
+
+
+### Camel GPSD component
+
+#todo document gpsd
+
+#### Maven dependency
+
+Maven users should add the following dependency to their POM file:
+
+    <dependency>
+      <groupId>io.rhiot</groupId>
+      <artifactId>camel-gpsd</artifactId>
+      <version>0.1.2</version>
+    </dependency>
+
+#### URI format
+
+GPSD component supports only consumer endpoints. The GPSD consumer is a polling one, i.e. it periodically asks the GPS device for the
+current coordinates. The Camel endpoint URI format for the GPSD consumer is as follows:
+
+    gpsd:label
+    
+Where `label` can be replaced with any text label:
+
+    from("gpsd:current-position").
+      to("file:///var/gps-coordinates");
+      
+GPSD consumer receives the `io.rhiot.component.gps.bu353.ClientGpsCoordinates` instances: #todo refactor
+
+    ClientGpsCoordinates currentPosition = consumerTemplate.receiveBody("gps-bu353:current-position", ClientGpsCoordinates.class);     
+
+`ClientGpsCoordinates` class name is prefixed with the `Client` to indicate that these coordinates have been created on the device,
+not on the server side of the IoT solution.
+
+#### Options
+
+| Option                   | Default value                                                                 | Description   |
+|:-------------------------|:-----------------------------------------------------------------------       |:------------- |
+| `consumer.host`          | localhost                                                                     | Milliseconds before the polling starts. |
+| `consumer.port`          | 2947                                                                          | Milliseconds before the polling starts. |
 
 #### BU353 type converters
 
