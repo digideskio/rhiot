@@ -145,10 +145,15 @@ class Deployer {
             switch(parser.command()) {
                 case 'scan':
                     println 'Scanning local networks for devices...'
+                    println()
+                    println '======================================'
                     println "Device type\t\tIPv4 address"
-                    new SimplePortScanningDeviceDetector().detectDevices().each {
-                        println "${it.type()}\t\t${it.type()}"
+                    println '--------------------------------------'
+                    def detector = new SimplePortScanningDeviceDetector()
+                    detector.detectDevices().each {
+                        println "${it.type()}\t\t${it.address()}"
                     }
+                    detector.close()
                     break;
                 case 'deploy-gateway':
                     def deployer = parser.hasCredentials() ? new Deployer(parser.username(), parser.password(), parser.debug) : new Deployer(parser.debug)

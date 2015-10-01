@@ -20,11 +20,14 @@ import com.github.camellabs.iot.utils.ssh.client.SshClient
 import org.slf4j.Logger
 
 import java.util.concurrent.Callable
+import java.util.concurrent.TimeoutException
 
+import static com.google.common.base.MoreObjects.firstNonNull
 import static com.google.common.collect.Lists.newLinkedList
 import static java.lang.Integer.parseInt
 import static java.util.Collections.emptyList
 import static java.util.concurrent.Executors.newCachedThreadPool
+import static java.util.concurrent.TimeUnit.SECONDS
 import static org.slf4j.LoggerFactory.getLogger
 
 class SimplePortScanningDeviceDetector implements DeviceDetector {
@@ -39,7 +42,11 @@ class SimplePortScanningDeviceDetector implements DeviceDetector {
 
     // Configuration members
 
-    private final int timeout;
+    private final String username
+
+    private final String password
+
+    private final int timeout
 
     // Collaborators
 
@@ -49,13 +56,15 @@ class SimplePortScanningDeviceDetector implements DeviceDetector {
 
     // Constructors
 
-    SimplePortScanningDeviceDetector(InterfacesProvider interfacesProvider, int timeout) {
+    SimplePortScanningDeviceDetector(InterfacesProvider interfacesProvider, String username, String password, int timeout) {
         this.interfacesProvider = interfacesProvider
+        this.username = firstNonNull(username, 'pi')
+        this.password = firstNonNull(password, 'raspberry')
         this.timeout = timeout
     }
 
     SimplePortScanningDeviceDetector(int timeout) {
-        this(new JavaNetInterfaceProvider(), timeout)
+        this(new JavaNetInterfaceProvider(), null, null, timeout)
     }
 
     SimplePortScanningDeviceDetector() {
@@ -63,7 +72,7 @@ class SimplePortScanningDeviceDetector implements DeviceDetector {
     }
 
     SimplePortScanningDeviceDetector(InterfacesProvider interfacesProvider) {
-        this(interfacesProvider, DEFAULT_PING_TIMEOUT)
+        this(interfacesProvider, null, null, DEFAULT_PING_TIMEOUT)
     }
 
     // Lifecycle
@@ -85,7 +94,7 @@ class SimplePortScanningDeviceDetector implements DeviceDetector {
                 def address = it.broadcast
                 int lastDot = address.lastIndexOf('.') + 1;
                 def addressBase = address.substring(0, lastDot);
-                int addressesNumber = parseInt(address.substring(lastDot));
+                def addressesNumber = address.substring(lastDot).toInteger()
                 for (int i = 0; i < addressesNumber; i++) {
                     addressesToScan.add((Inet4Address) Inet4Address.getByName(addressBase + (i + 1)));
                 }
@@ -115,7 +124,7 @@ class SimplePortScanningDeviceDetector implements DeviceDetector {
                 @Override
                 Device call() throws Exception {
                     try {
-                        new SshClient(device.getHostAddress(), 22, "pi", "raspberry").command("echo ping");
+                        new SshClient(device.hostAddress, 22, username, password).command("echo ping");
                         new Device(device, Device.DEVICE_RASPBERRY_PI_2)
                     } catch (Exception ex) {
                         LOG.debug("Can't connect to the Raspberry Pi device: " + device.getHostAddress(), ex);
@@ -123,7 +132,7 @@ class SimplePortScanningDeviceDetector implements DeviceDetector {
                     }
                 }
             })
-        }.collect{it.get()}.findAll{it != null}
+        }.collect{try{it.get(5, SECONDS)}catch(TimeoutException ex){return null}}.findAll{it != null}
     }
 
     private static class ScanResult {
