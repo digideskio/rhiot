@@ -39,7 +39,7 @@ public class GpsdComponentTest extends CamelTestSupport {
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() {
-                from("gpsd://foo")
+                from("gpsd://foo?host=localhost&port=2947")
                   .to("mock://foo");
             }
         };

@@ -26,6 +26,8 @@ import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents a Gpsd endpoint.
@@ -33,12 +35,12 @@ import org.apache.camel.spi.UriPath;
 @UriEndpoint(scheme = "gpsd", title = "Gpsd", syntax="gpsd:name", consumerClass = GpsdConsumer.class, label = "Gpsd")
 public class GpsdEndpoint extends DefaultEndpoint {
     
-    @UriPath @Metadata(required = "true")
-    private String name;
+    private final static Logger LOG = LoggerFactory.getLogger(GpsdEndpoint.class);
+    
     @UriParam(defaultValue = "2947")
     private int port = 2947;
     @UriParam(defaultValue = "localhost")
-    private String host = "10.0.0.13"; //todo add and test params
+    private String host = "localhost";
 
     private GPSdEndpoint gpsd4javaEndpoint;
     
@@ -71,16 +73,17 @@ public class GpsdEndpoint extends DefaultEndpoint {
 
     @Override
     protected void doStart() throws Exception {
-        super.doStart();
         gpsd4javaEndpoint = new GPSdEndpoint(host, port, new ResultParser());
+        super.doStart();
     }
 
     @Override
     protected void doStop() throws Exception {
-        super.doStop();
+        LOG.debug("Stopping GPSD endpoint");
         if (gpsd4javaEndpoint != null) {
             gpsd4javaEndpoint.stop();
         }
+        super.doStop();
     }
 
     // Configuration
@@ -96,5 +99,20 @@ public class GpsdEndpoint extends DefaultEndpoint {
     public GPSdEndpoint getGpsd4javaEndpoint() {
         return gpsd4javaEndpoint;
     }
-    
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
 }

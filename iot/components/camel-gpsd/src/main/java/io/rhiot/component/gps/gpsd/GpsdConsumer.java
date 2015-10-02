@@ -21,9 +21,12 @@ import java.util.Date;
 
 import de.taimos.gpsd4java.api.ObjectListener;
 import de.taimos.gpsd4java.backend.GPSdEndpoint;
+import de.taimos.gpsd4java.types.IGPSObject;
 import de.taimos.gpsd4java.types.TPVObject;
 import io.rhiot.component.gps.bu353.ClientGpsCoordinates;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
+import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.DefaultConsumer;
 import org.slf4j.Logger;
@@ -36,17 +39,14 @@ public class GpsdConsumer extends DefaultConsumer {
 
     private final static Logger LOG = LoggerFactory.getLogger(GpsdConsumer.class);
     
-    private volatile GpsdEndpoint endpoint;
-
     public GpsdConsumer(GpsdEndpoint endpoint, Processor processor) {
         super(endpoint, processor);
-        this.endpoint = endpoint;
     }
     
     
     @Override
     protected void doStart() throws Exception {
-        log.debug("Started GPSD consumer.");
+        log.info("Starting GPSD consumer.");
             
         try {
 
@@ -56,15 +56,12 @@ public class GpsdConsumer extends DefaultConsumer {
 
                 @Override
                 public void handleTPV(final TPVObject tpv) {
-                    Exchange exchange = endpoint.createExchange();
+                    Exchange exchange = createOutOnlyExchangeWithBodyAndHeaders(getEndpoint(), 
+                            new ClientGpsCoordinates(new Date(new Double(tpv.getTimestamp()).longValue()), tpv.getLatitude(), tpv.getLongitude()), tpv);
                     try {
-                        LOG.info("Consuming TPV: {}", tpv);
+                        LOG.debug("Consuming Time-Position-Velocity : {}", tpv);
                         //todo register listeners to handle, for this payload or Distance. (mind overlap with other geo-fencing stuff)
                         
-                        // todo 2 Also consider if we want exposure to the real gpsd4java Pojo or to add fields to ClientGpsCoordinates for speed, bearing etc. 
-                        // Maybe even both Pojos on the exchange, the original as a property and our Pojo as the payload 
-                        exchange.getOut().setBody(new ClientGpsCoordinates(new Date(new Double(tpv.getTimestamp()).longValue()), 
-                                tpv.getLatitude(), tpv.getLongitude())); 
                         getProcessor().process(exchange);
                     } catch (Exception e) {
                         exchange.setException(e);
@@ -73,6 +70,7 @@ public class GpsdConsumer extends DefaultConsumer {
             });
 
             gpsd4javaEndpoint.start();
+            log.info("Started GPSD consumer.");
 
             LOG.info("GPSD Version: {}", gpsd4javaEndpoint.version());
 
@@ -93,6 +91,16 @@ public class GpsdConsumer extends DefaultConsumer {
         getEndpoint().getGpsd4javaEndpoint().stop();
 
         super.doStop();
+    }
+
+    protected Exchange createOutOnlyExchangeWithBodyAndHeaders(org.apache.camel.Endpoint endpoint, ClientGpsCoordinates messageBody, IGPSObject gpsObject) {
+        Exchange exchange = endpoint.createExchange(ExchangePattern.OutOnly);
+        Message message = exchange.getIn();
+        message.setHeader("io.rhiot.gpsd.host", getEndpoint().getHost());
+        message.setHeader("io.rhiot.gpsd.port", getEndpoint().getPort());
+        message.setHeader("io.rhiot.gpsd.gpsObject", gpsObject);
+        message.setBody(messageBody);
+        return exchange;
     }
     
 }
