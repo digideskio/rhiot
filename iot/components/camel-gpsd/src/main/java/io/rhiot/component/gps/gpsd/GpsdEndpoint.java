@@ -79,7 +79,6 @@ public class GpsdEndpoint extends DefaultEndpoint {
 
     @Override
     protected void doStop() throws Exception {
-        LOG.debug("Stopping GPSD endpoint");
         if (gpsd4javaEndpoint != null) {
             gpsd4javaEndpoint.stop();
         }
