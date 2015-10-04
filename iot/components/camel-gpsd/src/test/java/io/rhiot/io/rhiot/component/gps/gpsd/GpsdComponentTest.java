@@ -36,23 +36,23 @@ public class GpsdComponentTest extends CamelTestSupport {
         mock.expectedMinimumMessageCount(9);
         
         //Should get at least 9 messages within 10 seconds
-//        assertMockEndpointsSatisfied(10, TimeUnit.SECONDS);
-        Thread.sleep(1000000);
+        assertMockEndpointsSatisfied(10, TimeUnit.SECONDS);
     }
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
             public void configure() {
-                from("gpsd://gpsSpeedTest?host=10.0.0.15&port=2947").routeId("gpsdSpeed")
+                from("gpsd://gpsSpeedTest?host=localhost&port=2947").routeId("gpsdSpeed")
                     .process(exchange -> {
                         TPVObject tpvObject = exchange.getIn().getHeader("io.rhiot.gpsd.gpsObject", TPVObject.class);
                         if (tpvObject.getSpeed() > 0) {
                             log.warn("Moving at [{}] meters/second, course [{}]", tpvObject.getSpeed(), tpvObject.getCourse());
                         } else {
-                            log.info("GPS is Stationary");
+                            log.info("GPS is stationary");
                         }
-                    });
+                    }).to("mock:foo")
+                ;
             }
         };
     }
