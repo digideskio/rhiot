@@ -22,12 +22,8 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
-import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
-import org.apache.camel.spi.UriPath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Represents a Gpsd endpoint.
@@ -35,12 +31,12 @@ import org.slf4j.LoggerFactory;
 @UriEndpoint(scheme = "gpsd", title = "Gpsd", syntax="gpsd:name", consumerClass = GpsdConsumer.class, label = "Gpsd")
 public class GpsdEndpoint extends DefaultEndpoint {
     
-    private final static Logger LOG = LoggerFactory.getLogger(GpsdEndpoint.class);
-    
     @UriParam(defaultValue = "2947")
     private int port = 2947;
     @UriParam(defaultValue = "localhost")
     private String host = "localhost";
+    @UriParam(defaultValue = "0", description = "Distance in km, eg 0.1 for 100m") //todo add default for metric type and provide conversion from miles/yards etc?
+    private double distance = 0;
 
     private GPSdEndpoint gpsd4javaEndpoint;
     
@@ -113,5 +109,13 @@ public class GpsdEndpoint extends DefaultEndpoint {
 
     public void setHost(String host) {
         this.host = host;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
     }
 }

@@ -19,6 +19,7 @@ package io.rhiot.component.gps.gpsd;
 
 import java.util.Date;
 
+import de.taimos.gpsd4java.api.DistanceListener;
 import de.taimos.gpsd4java.api.ObjectListener;
 import de.taimos.gpsd4java.backend.GPSdEndpoint;
 import de.taimos.gpsd4java.types.IGPSObject;
@@ -51,23 +52,21 @@ public class GpsdConsumer extends DefaultConsumer {
         try {
 
             GPSdEndpoint gpsd4javaEndpoint = getEndpoint().getGpsd4javaEndpoint();
-            //todo register listeners in registry 
-            gpsd4javaEndpoint.addListener(new ObjectListener() {
-
-                @Override
-                public void handleTPV(final TPVObject tpv) {
-                    Exchange exchange = createOutOnlyExchangeWithBodyAndHeaders(getEndpoint(), 
-                            new ClientGpsCoordinates(new Date(new Double(tpv.getTimestamp()).longValue()), tpv.getLatitude(), tpv.getLongitude()), tpv);
-                    try {
-                        LOG.debug("Consuming Time-Position-Velocity : {}", tpv);
-                        //todo register listeners to handle, for this payload or Distance. (mind overlap with other geo-fencing stuff)
-                        
-                        getProcessor().process(exchange);
-                    } catch (Exception e) {
-                        exchange.setException(e);
-                    } 
-                }
-            });
+            if (getEndpoint().getDistance() > 0) {
+                gpsd4javaEndpoint.addListener(new DistanceListener(getEndpoint().getDistance()) {
+                    @Override
+                    protected void handleLocation(TPVObject tpv) {
+                        consumeTPVObject(tpv);
+                    }
+                });
+            } else {
+                gpsd4javaEndpoint.addListener(new ObjectListener() {
+                    @Override
+                    public void handleTPV(final TPVObject tpv) {
+                        consumeTPVObject(tpv);
+                    }
+                });
+            }
 
             gpsd4javaEndpoint.start();
             log.info("Started GPSD consumer.");
@@ -78,6 +77,18 @@ public class GpsdConsumer extends DefaultConsumer {
             
         } catch (Exception e) {
             getExceptionHandler().handleException(e);
+        }
+    }
+
+    private void consumeTPVObject(TPVObject tpv) {
+        Exchange exchange = createOutOnlyExchangeWithBodyAndHeaders(getEndpoint(),
+                new ClientGpsCoordinates(new Date(new Double(tpv.getTimestamp()).longValue()), tpv.getLatitude(), tpv.getLongitude()), tpv);
+        try {
+            LOG.debug("Consuming Time-Position-Velocity : {}", tpv);
+
+            getProcessor().process(exchange);
+        } catch (Exception e) {
+            exchange.setException(e);
         }
     }
 
