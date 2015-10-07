@@ -51,12 +51,6 @@
       <artifactId>camel-test</artifactId>
       <scope>test</scope>
     </dependency>
-<!--todo remove dependency on bu353, or remove bu353, or integrate. lets see  -->
-    <dependency>
-      <groupId>io.rhiot</groupId>
-      <artifactId>camel-gps-bu353</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>de.taimos</groupId>
       <artifactId>gpsd4java</artifactId>

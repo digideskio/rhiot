@@ -24,7 +24,6 @@ import de.taimos.gpsd4java.api.ObjectListener;
 import de.taimos.gpsd4java.backend.GPSdEndpoint;
 import de.taimos.gpsd4java.types.IGPSObject;
 import de.taimos.gpsd4java.types.TPVObject;
-import io.rhiot.component.gps.bu353.ClientGpsCoordinates;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Message;
@@ -47,7 +46,7 @@ public class GpsdConsumer extends DefaultConsumer {
     
     @Override
     protected void doStart() throws Exception {
-        log.info("Starting GPSD consumer.");
+        log.debug("Starting GPSD consumer.");
             
         try {
 
@@ -69,7 +68,7 @@ public class GpsdConsumer extends DefaultConsumer {
             }
 
             gpsd4javaEndpoint.start();
-            log.info("Started GPSD consumer.");
+            log.debug("Started GPSD consumer.");
 
             LOG.info("GPSD Version: {}", gpsd4javaEndpoint.version());
 
@@ -84,7 +83,6 @@ public class GpsdConsumer extends DefaultConsumer {
         Exchange exchange = createOutOnlyExchangeWithBodyAndHeaders(getEndpoint(),
                 new ClientGpsCoordinates(new Date(new Double(tpv.getTimestamp()).longValue()), tpv.getLatitude(), tpv.getLongitude()), tpv);
         try {
-            LOG.debug("Consuming Time-Position-Velocity : {}", tpv);
 
             getProcessor().process(exchange);
         } catch (Exception e) {
@@ -104,12 +102,14 @@ public class GpsdConsumer extends DefaultConsumer {
         super.doStop();
     }
 
-    protected Exchange createOutOnlyExchangeWithBodyAndHeaders(org.apache.camel.Endpoint endpoint, ClientGpsCoordinates messageBody, IGPSObject gpsObject) {
+    //todo Taariq: 1. discuss whether to use the header, or set as body or property. 
+    // 2. If we only handle TPVObject then use that as param instead of this marker interface IGPSObject, but if we register listeners it can be any impl
+    private Exchange createOutOnlyExchangeWithBodyAndHeaders(org.apache.camel.Endpoint endpoint, ClientGpsCoordinates messageBody, IGPSObject gpsObject) {
         Exchange exchange = endpoint.createExchange(ExchangePattern.OutOnly);
         Message message = exchange.getIn();
         message.setHeader("io.rhiot.gpsd.host", getEndpoint().getHost());
         message.setHeader("io.rhiot.gpsd.port", getEndpoint().getPort());
-        message.setHeader("io.rhiot.gpsd.gpsObject", gpsObject);
+        message.setHeader("io.rhiot.gpsd.gpsObject", gpsObject); 
         message.setBody(messageBody);
         return exchange;
     }
